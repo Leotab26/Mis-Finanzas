@@ -1,4 +1,4 @@
-const CACHE='mis-finanzas-bonita-v2-2';
+const CACHE='mis-finanzas-bonita-v2-3';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 
 self.addEventListener('install',event=>{
