@@ -7,9 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Mis Finanzas">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="manifest" href="manifest.webmanifest">
-  <title>Mis Finanzas</title>
+      <title>Mis Finanzas</title>
   <style>
     :root{
       --bg:#f3f6ff;
@@ -189,7 +187,7 @@
 <body>
   <div class="app">
     <section class="hero">
-      <div class="hero-badge">💸 Control personal de finanzas</div>
+      <div class="hero-badge">💸 Control personal de finanzas · v2.1</div>
       <h1>Mis Finanzas</h1>
       <p>Registrá ingresos, gastos y categorías. Guardá tus datos en el dispositivo y hacé respaldos para futuras versiones.</p>
     </section>
@@ -199,7 +197,7 @@
       <div class="row">
         <div>
           <label for="initialBalance">Dinero disponible al comenzar</label>
-          <input id="initialBalance" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00">
+          <input id="initialBalance" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
         </div>
         <div style="flex:0 0 auto">
           <button id="saveInitial">Guardar saldo</button>
@@ -252,7 +250,7 @@
           </div>
           <div>
             <label for="movementAmount">Importe</label>
-            <input id="movementAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0,00" required>
+            <input id="movementAmount" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" required>
           </div>
           <div class="full">
             <label for="movementNote">Detalle opcional</label>
@@ -438,6 +436,34 @@
   function showMsg(el,text,type='ok'){
     el.textContent=text;
     el.className='msg '+(type==='err'?'err':type==='ok'?'ok':'muted');
+  }
+
+  function parseMoneyInput(value){
+    let s = String(value ?? '').trim().replace(/\s/g,'');
+    if(!s) return NaN;
+
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+
+    if(lastComma >= 0 && lastDot >= 0){
+      if(lastComma > lastDot){
+        s = s.replace(/\./g,'').replace(',', '.');
+      }else{
+        s = s.replace(/,/g,'');
+      }
+    }else if(lastComma >= 0){
+      s = s.replace(/\./g,'').replace(',', '.');
+    }else{
+      const parts = s.split('.');
+      if(parts.length > 2){
+        const dec = parts.pop();
+        s = parts.join('') + '.' + dec;
+      }
+    }
+
+    s = s.replace(/[^0-9.-]/g,'');
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
   }
 
   function populateCategories(selected){
@@ -639,9 +665,10 @@
 
   // events
   els.saveInitial.addEventListener('click', ()=>{
-    const v=Number(els.initialBalance.value);
+    const v=parseMoneyInput(els.initialBalance.value);
     if(!Number.isFinite(v) || v<0){ showMsg(els.initialMsg,'Ingresá un saldo inicial válido.','err'); return; }
     state.initialBalance=v;
+    els.initialBalance.value=v.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2});
     saveState();
     renderAll();
     showMsg(els.initialMsg,'Saldo inicial guardado.');
@@ -660,7 +687,7 @@
 
   els.form.addEventListener('submit', e=>{
     e.preventDefault();
-    const amount=Number(els.amount.value);
+    const amount=parseMoneyInput(els.amount.value);
     const date=els.date.value;
     const category=els.category.value;
     if(!date || !Number.isFinite(amount) || amount<=0 || !category || category==='__new__'){
@@ -812,7 +839,7 @@
         };
         state.nextId=Math.max(state.nextId, ...state.movements.map(m=>m.id+1), 1);
         saveState();
-        els.initialBalance.value=String(state.initialBalance||0);
+        els.initialBalance.value=Number(state.initialBalance||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2});
         populateCategories();
         renderAll();
         showMsg(els.backupMsg,`Respaldo importado: ${state.movements.length} movimientos recuperados.`);
@@ -827,13 +854,10 @@
 
   els.date.value=todayStr();
   els.month.value=todayStr().slice(0,7);
-  els.initialBalance.value=String(state.initialBalance||0);
+  els.initialBalance.value=Number(state.initialBalance||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2});
   populateCategories();
   renderAll();
 
-  if('serviceWorker' in navigator){
-    window.addEventListener('load', ()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-  }
 })();
 </script>
 </body>
