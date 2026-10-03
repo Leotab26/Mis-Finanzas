@@ -189,7 +189,7 @@
 <body>
   <div class="app">
     <section class="hero">
-      <div class="hero-badge">💸 Control personal de finanzas · v2.2</div>
+      <div class="hero-badge">💸 Control personal de finanzas · v2.3</div>
       <h1>Mis Finanzas</h1>
       <p>Registrá ingresos, gastos y categorías. Guardá tus datos en el dispositivo y hacé respaldos para futuras versiones.</p>
     </section>
@@ -445,26 +445,61 @@
     if(!s) return NaN;
 
     s = s.replace(/\s/g,'').replace(/\$/g,'');
+    s = s.replace(/[^0-9,.-]/g,'');
 
-    const comma = s.lastIndexOf(',');
-    const dot = s.lastIndexOf('.');
+    const commaCount = (s.match(/,/g) || []).length;
+    const dotCount = (s.match(/\./g) || []).length;
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
 
-    if(comma >= 0 && dot >= 0){
-      const decimalSeparator = comma > dot ? ',' : '.';
-      const thousandsSeparator = decimalSeparator === ',' ? '.' : ',';
-      s = s.split(thousandsSeparator).join('');
-      if(decimalSeparator === ',') s = s.replace(',', '.');
-    }else if(comma >= 0){
-      s = s.replace(/\./g,'').replace(',', '.');
-    }else if(dot >= 0){
-      const parts = s.split('.');
-      if(parts.length > 2){
+    if(commaCount > 0 && dotCount > 0){
+      // Formatos como 20.000,50 o 20,000.50:
+      // el último separador se considera decimal y el otro, de miles.
+      if(lastComma > lastDot){
+        s = s.replace(/\./g,'').replace(',', '.');
+      }else{
+        s = s.replace(/,/g,'');
+      }
+    }else if(commaCount > 0){
+      // En formato argentino la coma es el separador decimal.
+      // 20,50 -> 20.50
+      if(commaCount === 1){
+        s = s.replace(',', '.');
+      }else{
+        // Si hubiera más de una coma, conserva la última como decimal.
+        const parts = s.split(',');
         const decimal = parts.pop();
         s = parts.join('') + '.' + decimal;
       }
+    }else if(dotCount > 0){
+      const parts = s.split('.');
+
+      if(dotCount === 1){
+        const integerPart = parts[0];
+        const fractionPart = parts[1] || '';
+
+        // En formato argentino, un punto seguido por exactamente 3 dígitos
+        // se interpreta como separador de miles: 20.000 -> 20000.
+        // Con 1 o 2 dígitos se interpreta como decimal: 20.5 / 20.50.
+        if(/^[-]?\d+$/.test(integerPart) && /^\d{3}$/.test(fractionPart)){
+          s = integerPart + fractionPart;
+        }
+      }else{
+        // 1.234.567 -> 1234567 si todos los grupos posteriores tienen 3 dígitos.
+        const signlessFirst = parts[0].replace('-','');
+        const allThousands = /^\d+$/.test(signlessFirst) &&
+          parts.slice(1).every(p => /^\d{3}$/.test(p));
+
+        if(allThousands){
+          s = s.replace(/\./g,'');
+        }else{
+          // En un caso mixto, conserva el último punto como decimal.
+          const decimal = parts.pop();
+          s = parts.join('') + '.' + decimal;
+        }
+      }
     }
 
-    s = s.replace(/[^0-9.-]/g,'');
     const n = Number(s);
     return Number.isFinite(n) ? n : NaN;
   }
@@ -877,7 +912,7 @@
   if('serviceWorker' in navigator){
     window.addEventListener('load', async ()=>{
       try{
-        const registration = await navigator.serviceWorker.register('./sw.js?v=2.2');
+        const registration = await navigator.serviceWorker.register('./sw.js?v=2.3');
         await registration.update();
       }catch(e){}
     });
