@@ -7,6 +7,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Mis Finanzas">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="manifest" href="./manifest.webmanifest">
       <title>Mis Finanzas</title>
   <style>
     :root{
@@ -187,7 +189,7 @@
 <body>
   <div class="app">
     <section class="hero">
-      <div class="hero-badge">💸 Control personal de finanzas · v2.1</div>
+      <div class="hero-badge">💸 Control personal de finanzas · v2.2</div>
       <h1>Mis Finanzas</h1>
       <p>Registrá ingresos, gastos y categorías. Guardá tus datos en el dispositivo y hacé respaldos para futuras versiones.</p>
     </section>
@@ -439,31 +441,42 @@
   }
 
   function parseMoneyInput(value){
-    let s = String(value ?? '').trim().replace(/\s/g,'');
+    let s = String(value ?? '').trim();
     if(!s) return NaN;
 
-    const lastComma = s.lastIndexOf(',');
-    const lastDot = s.lastIndexOf('.');
+    s = s.replace(/\s/g,'').replace(/\$/g,'');
 
-    if(lastComma >= 0 && lastDot >= 0){
-      if(lastComma > lastDot){
-        s = s.replace(/\./g,'').replace(',', '.');
-      }else{
-        s = s.replace(/,/g,'');
-      }
-    }else if(lastComma >= 0){
+    const comma = s.lastIndexOf(',');
+    const dot = s.lastIndexOf('.');
+
+    if(comma >= 0 && dot >= 0){
+      const decimalSeparator = comma > dot ? ',' : '.';
+      const thousandsSeparator = decimalSeparator === ',' ? '.' : ',';
+      s = s.split(thousandsSeparator).join('');
+      if(decimalSeparator === ',') s = s.replace(',', '.');
+    }else if(comma >= 0){
       s = s.replace(/\./g,'').replace(',', '.');
-    }else{
+    }else if(dot >= 0){
       const parts = s.split('.');
       if(parts.length > 2){
-        const dec = parts.pop();
-        s = parts.join('') + '.' + dec;
+        const decimal = parts.pop();
+        s = parts.join('') + '.' + decimal;
       }
     }
 
     s = s.replace(/[^0-9.-]/g,'');
     const n = Number(s);
     return Number.isFinite(n) ? n : NaN;
+  }
+
+  function normalizeMoneyField(input){
+    const n = parseMoneyInput(input.value);
+    if(Number.isFinite(n)){
+      input.value = n.toLocaleString('es-AR',{
+        minimumFractionDigits:0,
+        maximumFractionDigits:2
+      });
+    }
   }
 
   function populateCategories(selected){
@@ -674,6 +687,9 @@
     showMsg(els.initialMsg,'Saldo inicial guardado.');
   });
 
+  els.initialBalance.addEventListener('blur', ()=>normalizeMoneyField(els.initialBalance));
+  els.amount.addEventListener('blur', ()=>normalizeMoneyField(els.amount));
+
   els.type.addEventListener('change', ()=>populateCategories());
   els.category.addEventListener('change', ()=>{
     const show=els.category.value==='__new__';
@@ -857,6 +873,15 @@
   els.initialBalance.value=Number(state.initialBalance||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2});
   populateCategories();
   renderAll();
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', async ()=>{
+      try{
+        const registration = await navigator.serviceWorker.register('./sw.js?v=2.2');
+        await registration.update();
+      }catch(e){}
+    });
+  }
 
 })();
 </script>
