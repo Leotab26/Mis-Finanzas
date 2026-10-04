@@ -181,15 +181,46 @@
     @media(max-width:430px){
       .hero h1{font-size:26px}
       .row{flex-direction:column;align-items:stretch}
-      .actions{width:100%}
-      .actions button{flex:1}
+
+      .cat-row{
+        flex-direction:column;
+        align-items:stretch;
+        gap:10px;
+        padding:14px 0;
+      }
+      .cat-row .grow{
+        width:100%;
+        padding:0 2px;
+      }
+      .cat-row .cat-name{
+        white-space:normal;
+        overflow-wrap:anywhere;
+        line-height:1.2;
+      }
+      .cat-row .meta{
+        line-height:1.35;
+      }
+      .cat-row .actions{
+        display:grid;
+        grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+        gap:8px;
+        width:100%;
+      }
+      .cat-row .actions button{
+        width:100%;
+        min-width:0;
+      }
+
+      .move-row{
+        align-items:flex-start;
+      }
     }
   </style>
 </head>
 <body>
   <div class="app">
     <section class="hero">
-      <div class="hero-badge">💸 Control personal de finanzas · v2.3</div>
+      <div class="hero-badge">💸 Control personal de finanzas · v2.4</div>
       <h1>Mis Finanzas</h1>
       <p>Registrá ingresos, gastos y categorías. Guardá tus datos en el dispositivo y hacé respaldos para futuras versiones.</p>
     </section>
@@ -912,7 +943,7 @@
   if('serviceWorker' in navigator){
     window.addEventListener('load', async ()=>{
       try{
-        const registration = await navigator.serviceWorker.register('./sw.js?v=2.3');
+        const registration = await navigator.serviceWorker.register('./sw.js?v=2.4');
         await registration.update();
       }catch(e){}
     });
