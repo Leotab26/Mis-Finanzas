@@ -220,7 +220,7 @@
 <body>
   <div class="app">
     <section class="hero">
-      <div class="hero-badge">💸 Control personal de finanzas · v2.4</div>
+      <div class="hero-badge">💸 Control personal de finanzas · v2.5</div>
       <h1>Mis Finanzas</h1>
       <p>Registrá ingresos, gastos y categorías. Guardá tus datos en el dispositivo y hacé respaldos para futuras versiones.</p>
     </section>
@@ -897,40 +897,125 @@
   els.importInput.addEventListener('change', ()=>{
     const file=els.importInput.files && els.importInput.files[0];
     if(!file) return;
+
     const reader=new FileReader();
     reader.onload=()=>{
       try{
         const d=JSON.parse(String(reader.result||''));
-        if(!validState(d)) throw new Error('invalid');
+
+        if(!d || typeof d!=='object'){
+          throw new Error('invalid');
+        }
+
+        const importedCategories = d.categories && typeof d.categories==='object'
+          ? d.categories
+          : {income:[],expense:[]};
+
+        const incomeCategories = Array.isArray(importedCategories.income)
+          ? importedCategories.income.map(String).filter(Boolean)
+          : [];
+
+        const expenseCategories = Array.isArray(importedCategories.expense)
+          ? importedCategories.expense.map(String).filter(Boolean)
+          : [];
+
+        const rawMovements = Array.isArray(d.movements) ? d.movements : [];
+
+        function validDateString(value){
+          const s=String(value||'');
+          if(s.length!==10) return false;
+          if(s[4]!=='-' || s[7]!=='-') return false;
+          const y=Number(s.slice(0,4));
+          const m=Number(s.slice(5,7));
+          const day=Number(s.slice(8,10));
+          return Number.isInteger(y) && Number.isInteger(m) && Number.isInteger(day) &&
+            y>=1900 && m>=1 && m<=12 && day>=1 && day<=31;
+        }
+
+        const importedMovements = rawMovements.map((m,i)=>{
+          const rawType = String(m && m.type || '').toLowerCase();
+          const type = rawType==='income' || rawType==='ingreso' ? 'income' : 'expense';
+
+          const rawAmount = m && m.amount !== undefined ? m.amount :
+                            m && m.importe !== undefined ? m.importe : 0;
+
+          const amount = typeof rawAmount==='number'
+            ? rawAmount
+            : parseMoneyInput(rawAmount);
+
+          return {
+            id:Number(m && m.id)||i+1,
+            date:String(m && (m.date || m.fecha) || ''),
+            type,
+            category:String(m && (m.category || m.categoria) || 'Sin categoría'),
+            amount:Number.isFinite(amount) ? amount : 0,
+            note:String(m && (m.note || m.detalle) || '')
+          };
+        }).filter(m=>validDateString(m.date));
+
         state = {
-          schemaVersion:2,
-          initialBalance:Number(d.initialBalance)||0,
+          schemaVersion:3,
+          initialBalance:Number(d.initialBalance ?? d.saldoInicial ?? 0)||0,
           categories:{
-            income:[...new Set(d.categories.income.map(String).filter(Boolean))],
-            expense:[...new Set(d.categories.expense.map(String).filter(Boolean))]
+            income:[...new Set((incomeCategories.length ? incomeCategories : DEFAULT_CATEGORIES.income))],
+            expense:[...new Set((expenseCategories.length ? expenseCategories : DEFAULT_CATEGORIES.expense))]
           },
-          movements:d.movements.map((m,i)=>({
-            id:Number(m.id)||i+1,
-            date:String(m.date||''),
-            type:m.type==='income'?'income':'expense',
-            category:String(m.category||'Sin categoría'),
-            amount:Number(m.amount)||0,
-            note:String(m.note||'')
-          })).filter(m=>/^\\d{4}-\\d{2}-\\d{2}$/.test(m.date) && m.amount>=0),
+          movements:importedMovements,
           nextId:Number(d.nextId)||1
         };
-        state.nextId=Math.max(state.nextId, ...state.movements.map(m=>m.id+1), 1);
+
+        state.nextId=Math.max(
+          state.nextId,
+          ...state.movements.map(m=>m.id+1),
+          1
+        );
+
+        // Ensure categories used by imported movements are also available.
+        state.movements.forEach(m=>{
+          const list=state.categories[m.type];
+          if(list && !list.includes(m.category)){
+            list.push(m.category);
+          }
+        });
+        state.categories.income.sort((a,b)=>a.localeCompare(b,'es'));
+        state.categories.expense.sort((a,b)=>a.localeCompare(b,'es'));
+
         saveState();
-        els.initialBalance.value=Number(state.initialBalance||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2});
+
+        els.initialBalance.value=Number(state.initialBalance||0).toLocaleString('es-AR',{
+          minimumFractionDigits:0,
+          maximumFractionDigits:2
+        });
+
         populateCategories();
         renderAll();
-        showMsg(els.backupMsg,`Respaldo importado: ${state.movements.length} movimientos recuperados.`);
-      }catch{
+
+        const skipped = rawMovements.length - importedMovements.length;
+        if(skipped>0){
+          showMsg(
+            els.backupMsg,
+            `Respaldo importado: ${importedMovements.length} movimientos recuperados y ${skipped} omitidos por fecha inválida.`,
+            'ok'
+          );
+        }else{
+          showMsg(
+            els.backupMsg,
+            `Respaldo importado: ${importedMovements.length} movimientos recuperados.`,
+            'ok'
+          );
+        }
+      }catch(e){
         showMsg(els.backupMsg,'El archivo no es un respaldo válido de la app.','err');
       }finally{
         els.importInput.value='';
       }
     };
+
+    reader.onerror=()=>{
+      showMsg(els.backupMsg,'No se pudo leer el archivo de respaldo.','err');
+      els.importInput.value='';
+    };
+
     reader.readAsText(file);
   });
 
@@ -943,7 +1028,7 @@
   if('serviceWorker' in navigator){
     window.addEventListener('load', async ()=>{
       try{
-        const registration = await navigator.serviceWorker.register('./sw.js?v=2.4');
+        const registration = await navigator.serviceWorker.register('./sw.js?v=2.5');
         await registration.update();
       }catch(e){}
     });
