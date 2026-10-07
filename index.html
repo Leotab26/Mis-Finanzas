@@ -317,7 +317,7 @@
       </div>
     </section>
 
-    <section class="metrics">
+    <section id="balancesSection" class="metrics">
       <div class="metric m-balance">
         <div class="label">Saldo actual</div>
         <div id="currentBalance" class="value">$ 0,00</div>
@@ -337,7 +337,7 @@
     </section>
 
     <section class="section-grid two">
-      <div class="card">
+      <div id="loadMovementCard" class="card">
         <div class="card-title">Cargar movimiento</div>
         <form id="movementForm" class="form-grid">
           <div>
@@ -401,7 +401,7 @@
       </div>
     </section>
 
-    <section class="card">
+    <section id="monthlySummaryCard" class="card">
       <div class="card-title">Resumen mensual</div>
       <div class="row" style="margin-bottom:14px">
         <div>
@@ -467,7 +467,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div id="movementsCard" class="card">
         <div class="card-title">Movimientos</div>
         <div id="moveCount" class="subtext" style="margin-bottom:8px">0 movimientos</div>
         <div id="movesList" class="moves-scroll"></div>
@@ -786,6 +786,29 @@
     renderDonut(els.expenseChart, expRows, expTotal, 'Gastos', '#EF476F');
     renderLegend(els.incomeLegend, incRows, incTotal, 'income');
     renderLegend(els.expenseLegend, expRows, expTotal, 'expense');
+  }
+
+  function reorderMainSections(){
+    const app=document.querySelector('.app');
+    if(!app) return;
+
+    const hero=app.querySelector('.hero');
+    const balances=document.getElementById('balancesSection');
+    const load=document.getElementById('loadMovementCard');
+    const movements=document.getElementById('movementsCard');
+    const summary=document.getElementById('monthlySummaryCard');
+    const initial=document.getElementById('initialCard');
+    const backup=document.getElementById('backupCard');
+    const categories=document.getElementById('categoriesCard');
+    const footer=app.querySelector('.footer');
+
+    [balances,load,movements,summary,initial,backup,categories,footer].forEach(el=>{
+      if(el) app.appendChild(el);
+    });
+
+    app.querySelectorAll('.section-grid.two').forEach(wrapper=>{
+      if(wrapper.children.length===0) wrapper.remove();
+    });
   }
 
   function setupCollapsible(card, toggle){
@@ -1146,6 +1169,8 @@
 
     reader.readAsText(file);
   });
+
+  reorderMainSections();
 
   setupCollapsible(els.initialCard,els.initialToggle);
   setupCollapsible(els.backupCard,els.backupToggle);
