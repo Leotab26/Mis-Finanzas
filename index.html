@@ -10,6 +10,13 @@
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
   <link rel="manifest" href="./manifest.webmanifest">
       <title>Mis Finanzas</title>
+  <script>
+    (()=>{try{
+      if(localStorage.getItem('mis_finanzas_theme')==='dark'){
+        document.documentElement.setAttribute('data-theme','dark');
+      }
+    }catch(e){}})();
+  </script>
   <style>
     :root{
       --bg:#f3f6ff;
@@ -30,6 +37,25 @@
       --shadow-soft:0 10px 24px rgba(63,72,119,.07);
       --radius:22px;
       --radius-sm:14px;
+    }
+
+    html[data-theme="dark"]{
+      --bg:#090e1a;
+      --bg2:#0f1729;
+      --card:#151d31;
+      --text:#f4f7ff;
+      --muted:#a8b1c7;
+      --line:#2a3550;
+      --primary:#7b88ff;
+      --primary2:#a06cff;
+      --primary-soft:#242e52;
+      --success:#35d486;
+      --success-soft:#173a2a;
+      --danger:#ff6485;
+      --danger-soft:#40202b;
+      --warning:#fbbf24;
+      --shadow:0 14px 34px rgba(0,0,0,.28);
+      --shadow-soft:0 10px 26px rgba(0,0,0,.20);
     }
     *{box-sizing:border-box}
     html,body{
@@ -172,6 +198,81 @@
       border-radius:18px;padding:14px;background:linear-gradient(135deg,#eef4ff,#f7f1ff);border:1px solid #e3e8ff
     }
     .footer{font-size:12px;color:var(--muted);text-align:center;padding:10px}
+    .theme-toggle{
+      position:absolute;
+      top:18px;
+      right:18px;
+      width:44px;
+      height:44px;
+      min-height:44px;
+      padding:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.26);
+      background:rgba(255,255,255,.16);
+      color:#fff;
+      box-shadow:none;
+      backdrop-filter:blur(8px);
+      font-size:20px;
+      z-index:2;
+    }
+    .theme-toggle:hover{transform:none}
+
+    html[data-theme="dark"] .card{
+      background:rgba(21,29,49,.96);
+      border-color:#27324c;
+    }
+    html[data-theme="dark"] input,
+    html[data-theme="dark"] select{
+      background:#10182a;
+      color:var(--text);
+      border-color:var(--line);
+    }
+    html[data-theme="dark"] input::placeholder{color:#73809c}
+    html[data-theme="dark"] button.secondary,
+    html[data-theme="dark"] .tabs button,
+    html[data-theme="dark"] .summary-card{
+      background:#151d31;
+      color:var(--text);
+      border-color:var(--line);
+    }
+    html[data-theme="dark"] button.danger{
+      background:#151d31;
+      border-color:#613246;
+    }
+    html[data-theme="dark"] .tabs button.active{
+      background:linear-gradient(135deg,#222d52,#33264c);
+      border-color:#46558e;
+      color:#b7c0ff;
+    }
+    html[data-theme="dark"] .help-box{
+      background:linear-gradient(135deg,#18233c,#251d3a);
+      border-color:#2c3959;
+    }
+    html[data-theme="dark"] .chip{
+      background:#111a2c;
+      color:#c6cee0;
+      border-color:#2b3651;
+    }
+    html[data-theme="dark"] .empty{
+      background:rgba(12,19,34,.68);
+      border-color:#33405d;
+    }
+    html[data-theme="dark"] .bar,
+    html[data-theme="dark"] .moves-scroll::-webkit-scrollbar-track{
+      background:#222c43;
+    }
+    html[data-theme="dark"] .donut-wrap svg > circle:first-of-type{
+      fill:#2a3550 !important;
+    }
+    html[data-theme="dark"] .donut-wrap svg > circle:last-of-type{
+      fill:#151d31 !important;
+    }
+    html[data-theme="dark"] .donut-wrap svg text:first-of-type{
+      fill:#a8b1c7 !important;
+    }
 
     .collapsible-card{padding:0;overflow:hidden}
     .collapsible-toggle{
@@ -290,7 +391,10 @@
 <body>
   <div class="app">
     <section class="hero">
-      <div class="hero-badge">💸 Control personal de finanzas · v2.6</div>
+      <div class="hero-badge">💸 Control personal de finanzas · v2.7</div>
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Activar modo oscuro" title="Cambiar modo claro/oscuro">
+        <span id="themeIcon">🌙</span>
+      </button>
       <h1>Mis Finanzas</h1>
       <p>Registrá ingresos, gastos y categorías. Guardá tus datos en el dispositivo y hacé respaldos para futuras versiones.</p>
     </section>
@@ -327,7 +431,7 @@
         <div id="monthIncome" class="value">$ 0,00</div>
       </div>
       <div class="metric m-expense">
-        <div class="label">Gastos del mes</div>
+        <div class="label">Egresos del mes</div>
         <div id="monthExpense" class="value">$ 0,00</div>
       </div>
       <div class="metric m-net">
@@ -494,6 +598,7 @@
 
   const $ = id => document.getElementById(id);
   const els = {
+    themeToggle:$('themeToggle'), themeIcon:$('themeIcon'),
     initialCard:$('initialCard'), initialToggle:$('initialToggle'), initialContent:$('initialContent'),
     initialBalance:$('initialBalance'), saveInitial:$('saveInitial'), initialMsg:$('initialMsg'),
     currentBalance:$('currentBalance'), monthIncome:$('monthIncome'), monthExpense:$('monthExpense'), monthNet:$('monthNet'),
@@ -567,6 +672,25 @@
   function showMsg(el,text,type='ok'){
     el.textContent=text;
     el.className='msg '+(type==='err'?'err':type==='ok'?'ok':'muted');
+  }
+
+  function applyTheme(theme){
+    const dark=theme==='dark';
+    document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+    if(els.themeIcon) els.themeIcon.textContent=dark?'☀️':'🌙';
+    if(els.themeToggle){
+      els.themeToggle.setAttribute('aria-label',dark?'Activar modo claro':'Activar modo oscuro');
+      els.themeToggle.title=dark?'Cambiar a modo claro':'Cambiar a modo oscuro';
+    }
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(meta) meta.setAttribute('content',dark?'#090e1a':'#0b1020');
+  }
+
+  function toggleTheme(){
+    const dark=document.documentElement.getAttribute('data-theme')==='dark';
+    const next=dark?'light':'dark';
+    try{localStorage.setItem('mis_finanzas_theme',next);}catch(e){}
+    applyTheme(next);
   }
 
   function parseMoneyInput(value){
@@ -1172,6 +1296,9 @@
 
   reorderMainSections();
 
+  els.themeToggle.addEventListener('click',toggleTheme);
+  applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light');
+
   setupCollapsible(els.initialCard,els.initialToggle);
   setupCollapsible(els.backupCard,els.backupToggle);
   setupCollapsible(els.categoriesCard,els.categoriesToggle);
@@ -1185,7 +1312,7 @@
   if('serviceWorker' in navigator){
     window.addEventListener('load', async ()=>{
       try{
-        const registration = await navigator.serviceWorker.register('./sw.js?v=2.6');
+        const registration = await navigator.serviceWorker.register('./sw.js?v=2.7');
         await registration.update();
       }catch(e){}
     });
