@@ -172,6 +172,76 @@
       border-radius:18px;padding:14px;background:linear-gradient(135deg,#eef4ff,#f7f1ff);border:1px solid #e3e8ff
     }
     .footer{font-size:12px;color:var(--muted);text-align:center;padding:10px}
+
+    .collapsible-card{padding:0;overflow:hidden}
+    .collapsible-toggle{
+      width:100%;
+      min-height:64px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:16px;
+      border:0;
+      border-radius:var(--radius);
+      background:transparent;
+      color:var(--text);
+      box-shadow:none;
+      text-align:left;
+    }
+    .collapsible-toggle:hover{transform:none}
+    .collapsible-toggle .toggle-title{
+      font-size:18px;
+      font-weight:900;
+      letter-spacing:-.02em;
+    }
+    .collapsible-toggle .toggle-hint{
+      display:block;
+      margin-top:3px;
+      font-size:12px;
+      font-weight:600;
+      color:var(--muted);
+    }
+    .collapsible-toggle .chevron{
+      flex:0 0 auto;
+      width:34px;
+      height:34px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      background:var(--primary-soft);
+      color:var(--primary);
+      font-size:20px;
+      transition:transform .18s ease;
+    }
+    .collapsible-card.open .collapsible-toggle .chevron{transform:rotate(180deg)}
+    .collapsible-content{
+      display:none;
+      padding:0 16px 16px;
+    }
+    .collapsible-card.open .collapsible-content{display:block}
+
+    .moves-scroll{
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+      scrollbar-width:thin;
+      scrollbar-color:#aab5ff #edf1fb;
+      padding-right:4px;
+    }
+    .moves-scroll::-webkit-scrollbar{width:7px}
+    .moves-scroll::-webkit-scrollbar-track{background:#edf1fb;border-radius:999px}
+    .moves-scroll::-webkit-scrollbar-thumb{background:#aab5ff;border-radius:999px}
+    .scroll-hint{
+      display:none;
+      margin-top:9px;
+      text-align:center;
+      font-size:12px;
+      font-weight:700;
+      color:var(--muted);
+    }
+    .scroll-hint.visible{display:block}
     @media(min-width:720px){
       .metrics{grid-template-columns:repeat(4,1fr)}
       .form-grid{grid-template-columns:1fr 1fr}
@@ -220,23 +290,31 @@
 <body>
   <div class="app">
     <section class="hero">
-      <div class="hero-badge">💸 Control personal de finanzas · v2.5</div>
+      <div class="hero-badge">💸 Control personal de finanzas · v2.6</div>
       <h1>Mis Finanzas</h1>
       <p>Registrá ingresos, gastos y categorías. Guardá tus datos en el dispositivo y hacé respaldos para futuras versiones.</p>
     </section>
 
-    <section class="card">
-      <div class="card-title">Saldo inicial</div>
-      <div class="row">
-        <div>
-          <label for="initialBalance">Dinero disponible al comenzar</label>
-          <input id="initialBalance" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
+    <section id="initialCard" class="card collapsible-card">
+      <button id="initialToggle" class="collapsible-toggle" type="button" aria-expanded="false">
+        <span>
+          <span class="toggle-title">Saldo inicial</span>
+          <span class="toggle-hint">Modificar solo cuando sea necesario</span>
+        </span>
+        <span class="chevron">⌄</span>
+      </button>
+      <div id="initialContent" class="collapsible-content">
+        <div class="row">
+          <div>
+            <label for="initialBalance">Dinero disponible al comenzar</label>
+            <input id="initialBalance" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00">
+          </div>
+          <div style="flex:0 0 auto">
+            <button id="saveInitial">Guardar saldo</button>
+          </div>
         </div>
-        <div style="flex:0 0 auto">
-          <button id="saveInitial">Guardar saldo</button>
-        </div>
+        <div id="initialMsg" class="msg muted"></div>
       </div>
-      <div id="initialMsg" class="msg muted"></div>
     </section>
 
     <section class="metrics">
@@ -296,8 +374,15 @@
         </form>
       </div>
 
-      <div class="card">
-        <div class="card-title">Copia de seguridad</div>
+      <div id="backupCard" class="card collapsible-card">
+        <button id="backupToggle" class="collapsible-toggle" type="button" aria-expanded="false">
+          <span>
+            <span class="toggle-title">Copia de seguridad</span>
+            <span class="toggle-hint">Exportar o importar respaldos</span>
+          </span>
+          <span class="chevron">⌄</span>
+        </button>
+        <div id="backupContent" class="collapsible-content">
         <div class="help-box">
           <div class="subtext">Exportá o importá un respaldo para pasar tus datos a nuevas versiones de la app.</div>
           <div class="toolbar" style="margin-top:12px">
@@ -311,6 +396,7 @@
         </div>
         <div style="margin-top:14px">
           <div class="chip">📱 Los datos se guardan localmente en este dispositivo</div>
+        </div>
         </div>
       </div>
     </section>
@@ -354,8 +440,15 @@
     </section>
 
     <section class="section-grid two">
-      <div class="card">
-        <div class="card-title">Administrar categorías</div>
+      <div id="categoriesCard" class="card collapsible-card">
+        <button id="categoriesToggle" class="collapsible-toggle" type="button" aria-expanded="false">
+          <span>
+            <span class="toggle-title">Administrar categorías</span>
+            <span class="toggle-hint">Editar o eliminar categorías</span>
+          </span>
+          <span class="chevron">⌄</span>
+        </button>
+        <div id="categoriesContent" class="collapsible-content">
         <div class="tabs">
           <button id="tabExpenses" type="button" class="active">Gastos</button>
           <button id="tabIncomes" type="button">Ingresos</button>
@@ -371,12 +464,14 @@
             <button id="cancelEdit" class="small secondary" type="button">Cancelar</button>
           </div>
         </div>
+        </div>
       </div>
 
       <div class="card">
         <div class="card-title">Movimientos</div>
         <div id="moveCount" class="subtext" style="margin-bottom:8px">0 movimientos</div>
-        <div id="movesList"></div>
+        <div id="movesList" class="moves-scroll"></div>
+        <div id="movesScrollHint" class="scroll-hint">Deslizá dentro de esta sección para ver movimientos anteriores</div>
         <div id="movesEmpty" class="empty">Cargá tu primer ingreso o gasto para comenzar.</div>
       </div>
     </section>
@@ -399,6 +494,7 @@
 
   const $ = id => document.getElementById(id);
   const els = {
+    initialCard:$('initialCard'), initialToggle:$('initialToggle'), initialContent:$('initialContent'),
     initialBalance:$('initialBalance'), saveInitial:$('saveInitial'), initialMsg:$('initialMsg'),
     currentBalance:$('currentBalance'), monthIncome:$('monthIncome'), monthExpense:$('monthExpense'), monthNet:$('monthNet'),
     form:$('movementForm'), date:$('movementDate'), type:$('movementType'), category:$('movementCategory'), amount:$('movementAmount'),
@@ -411,8 +507,10 @@
     tabExpenses:$('tabExpenses'), tabIncomes:$('tabIncomes'), categoryList:$('categoryList'),
     categoryManagerMsg:$('categoryManagerMsg'), editPanel:$('editPanel'), editCategoryName:$('editCategoryName'),
     saveEdit:$('saveEdit'), cancelEdit:$('cancelEdit'),
+    backupCard:$('backupCard'), backupToggle:$('backupToggle'), backupContent:$('backupContent'),
+    categoriesCard:$('categoriesCard'), categoriesToggle:$('categoriesToggle'), categoriesContent:$('categoriesContent'),
     exportBtn:$('exportBtn'), importInput:$('importInput'), backupMsg:$('backupMsg'),
-    movesList:$('movesList'), movesEmpty:$('movesEmpty'), moveCount:$('moveCount')
+    movesList:$('movesList'), movesScrollHint:$('movesScrollHint'), movesEmpty:$('movesEmpty'), moveCount:$('moveCount')
   };
 
   const money = new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',minimumFractionDigits:2});
@@ -690,6 +788,35 @@
     renderLegend(els.expenseLegend, expRows, expTotal, 'expense');
   }
 
+  function setupCollapsible(card, toggle){
+    if(!card || !toggle) return;
+    toggle.addEventListener('click',()=>{
+      const open=card.classList.toggle('open');
+      toggle.setAttribute('aria-expanded',open ? 'true' : 'false');
+    });
+  }
+
+  function sizeMovementScroll(listLength){
+    if(!els.movesList) return;
+
+    els.movesScrollHint.classList.toggle('visible',listLength>5);
+
+    if(listLength<=5){
+      els.movesList.style.maxHeight='none';
+      els.movesList.style.overflowY='visible';
+      return;
+    }
+
+    requestAnimationFrame(()=>{
+      const rows=[...els.movesList.querySelectorAll('.move-row')];
+      const visibleRows=rows.slice(0,5);
+      const height=visibleRows.reduce((sum,row)=>sum+row.getBoundingClientRect().height,0);
+      els.movesList.style.maxHeight=Math.ceil(height)+'px';
+      els.movesList.style.overflowY='auto';
+      els.movesList.scrollTop=0;
+    });
+  }
+
   function renderMoves(){
     const list=sortedMoves().reverse();
     const bal=balances().map;
@@ -713,6 +840,7 @@
         </div>`;
       els.movesList.appendChild(row);
     });
+    sizeMovementScroll(list.length);
   }
 
   function renderCategoryManager(){
@@ -1019,6 +1147,10 @@
     reader.readAsText(file);
   });
 
+  setupCollapsible(els.initialCard,els.initialToggle);
+  setupCollapsible(els.backupCard,els.backupToggle);
+  setupCollapsible(els.categoriesCard,els.categoriesToggle);
+
   els.date.value=todayStr();
   els.month.value=todayStr().slice(0,7);
   els.initialBalance.value=Number(state.initialBalance||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2});
@@ -1028,7 +1160,7 @@
   if('serviceWorker' in navigator){
     window.addEventListener('load', async ()=>{
       try{
-        const registration = await navigator.serviceWorker.register('./sw.js?v=2.5');
+        const registration = await navigator.serviceWorker.register('./sw.js?v=2.6');
         await registration.update();
       }catch(e){}
     });
